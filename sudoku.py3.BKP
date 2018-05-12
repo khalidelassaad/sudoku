@@ -1,0 +1,176 @@
+class Board:
+    def __init__(self):
+        self.rows = []
+        self.cols = []
+        self.squares = []
+        for x in range(9):
+            self.rows.append([" "]*9)
+            self.cols.append([" "]*9)
+            self.squares.append([" "]*9)
+        
+    def drawboard(self):
+        rs = ""
+        for x in range(0,3):
+            rs = rs + " ".join(self.rows[x][0:3])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][3:6])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][6:])
+            rs = rs + "\n"
+        rs = rs + "-----+-----+-----\n"
+        for x in range(3,6):
+            rs = rs + " ".join(self.rows[x][0:3])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][3:6])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][6:])
+            rs = rs + "\n"
+        rs = rs + "-----+-----+-----\n"
+        for x in range(6,9):
+            rs = rs + " ".join(self.rows[x][0:3])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][3:6])
+            rs = rs + "|"
+            rs = rs + " ".join(self.rows[x][6:])
+            rs = rs + "\n"
+        print(rs)
+
+    def setcell(self,row,col,num):
+        self.rows[row][col] = str(num)
+        self.updatefromrows()
+        return
+
+    def clearcell(self,row,col):
+        self.rows[row][col] = " "
+        return
+
+    def readfromstring(self,s):
+        if len(s) != 81:
+            raise ValueError
+        i = 0
+        for row in range(9):
+            for col in range(9):
+                if s[i] == "0":
+                    x = " "
+                elif s[i] in "123456789 ":
+                    x = s[i]
+                else:
+                    raise ValueError
+                self.rows[row][col] = x
+                i+=1
+        self.updatefromrows()
+        return
+
+    def printtostring(self):
+        rs = ""
+        for row in self.rows:
+            for val in row:
+                rs = rs + val
+        return rs
+
+    def colsfromrows(self):
+        #Populates self.cols depending on what's in rows
+        for col in range(9):
+            for row in range(9):
+                self.cols[col][row] = self.rows[row][col]
+        return
+
+    def squaresfromrows(self):
+        #Populates self.squares depending on what's in rows
+        for x in range(3):
+            for y in range(3):
+                for row in range(3):
+                    for col in range(3):
+                        self.squares[x*3+y][row*3+col] = self.rows[row+x*3][col+y*3]
+        return
+
+    def updatefromrows(self):
+        self.colsfromrows()
+        self.squaresfromrows()
+        return
+
+    def squarefromrowcol(self,row,col):
+        return (row//3)*3+col//3
+
+    def determinepossibilities(self,row,col):
+        if self.rows[row][col] != " ":
+            raise ValueError
+        possibilities = ["1","2","3","4","5","6","7","8","9"]
+        for val in self.rows[row] + self.cols[col] + self.squares[self.squarefromrowcol(row,col)]:
+            if val in possibilities:
+                possibilities.remove(val)
+        return possibilities
+
+    def full(self):
+        for row in self.rows:
+            if " " in row:
+                return False
+        return True
+
+    def valid(self):
+        #returns True if is valid, False if there is an error
+        L = self.rows + self.cols + self.squares
+        for sublist in L:
+            R = ["1","2","3","4","5","6","7","8","9"]
+            for val in sublist:
+                if val == " ":
+                    continue
+                try:    
+                    R.remove(val)
+                except:
+                    return False
+        return True
+
+    def solve(self):
+        while True:
+            self.drawboard()
+            if not self.valid():
+                return False
+            if self.full():
+                return True
+            solves = []
+            possibilities = []
+            for x in range(9):
+                for y in range(9):
+                    try:
+                        p = self.determinepossibilities(x,y)
+                        possibilities.append((x,y,p))
+                        if len(p) == 1:
+                            solves.append((x,y,p[0]))
+                    except ValueError:
+                        pass
+            for solve in solves:
+                self.setcell(solve[0],solve[1],solve[2])
+            if not self.valid():
+                return False
+            if solves:
+                continue
+            possibilities.sort(key=lambda x: len(x[2]))
+            for poss in possibilities:
+                for val in poss[2]:
+                    B = Board()
+                    B.readfromstring(self.printtostring())
+                    B.setcell(poss[0],poss[1],val)
+                    if B.solve():
+                        self.readfromstring(B.printtostring())
+                        return True
+            
+                
+
+
+S = Board()
+S.readfromstring("029000700000079004100006000040001030800604005060200070000500007700930000006000390")
+#S.readfromstring("006020010100005003000100700007509800003060100005701200001007000900800007020090400")
+#S.readfromstring("000020097530004008208609004400000720020000080061000005600908402700100056910060000")
+S.drawboard()
+S.solve()
+S.drawboard()
+"""
+for col in S.cols:
+    print(col)
+print()
+S.drawboard()
+for square in S.squares:
+    print(square)
+print(S.squarefromrowcol(2,8))
+"""
